@@ -1,4 +1,6 @@
 import cv2
+import mediapipe as md
+
 
 
 #basic command to open laptop camera
