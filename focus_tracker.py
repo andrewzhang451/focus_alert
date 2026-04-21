@@ -1,9 +1,11 @@
 import cv2
 import mediapipe as mp
 
-#go into the mediapipe module to grab the face_detection module 
-mp_face = mp.solutions.face_detection
-face_detection = mp_face.FaceDetection()
+#go into the mediapipe module to grab the face_mesh module 
+mp_face_mesh = mp.solutions.face_mesh
+# face_mesh is a more detailed face detection compared to the facebox version
+face_mesh = mp_face_mesh.FaceMesh()
+
 
 #basic command to open laptop camera
 cap = cv2.VideoCapture(0)
@@ -15,27 +17,34 @@ while True:
     break
   
   rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-  results = face_detection.process(rgb) #ask mediapip to check if there is a face
+  results = face_mesh.process(rgb) #ask mediapip to check if there is a face
   
-  if results.detections:
-    #for each of the face we found
-    for detection in results.detections:
-      #bouding box is just the box for your face. this will 
-      bbox = detection.location_data.relative_bounding_box
+  
+  focus = False
+  
+  if results.multi_face_landmarks:
+    focus = True
+  
+  if results.multi_face_landmarks:
+    for face_landmarks in results.multi_face_landmarks:
+      h,w,_ = frame.shape
       
-      #mediapipe gives percentages for box values, not pixel locations. so need box size to convert later
-      h,w, _ = frame.shape
+      eye_point = [33,133,159,145]
       
-      #based on where the bbox is on the screen, this will convert that locaiton into coordinates.
-      x = int(bbox.xmin * w)
-      y = int(bbox.ymin * h)
-      width = int(bbox.width * w)
-      height = int(bbox.height * h)
-      
-      # this will draw the green box for user to see
-      cv2.rectangle(frame, (x,y), (x + width, y + height), (0,255,0), 2)
-      
-      
+      for point_id in eye_point:
+        # shorten this whole function into "lm" for easier re-usability 
+        lm = face_landmarks.landmark[point_id] 
+        x = int(lm.x * w)
+        y = int(lm.y * h)
+        
+        cv2.circle(frame, (x,y), 3, (0,255,0), -1)
+        
+  if focus:
+    cv2.putText(frame,"YOU ARE FOCUS", (30,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+  else:
+    cv2.putText(frame, "DISTRACTED", (30,40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+  
+  
   cv2.imshow("Live Camera", frame)
   
   if cv2.waitKey(1) & 0xFF == ord('q'):
